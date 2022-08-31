@@ -579,7 +579,7 @@ const type* value;
 
 
 
-## 5.内存对齐
+## 5.内存对齐(***)
 
 内存对齐的目的是为了让CPU能一次获取到数据，从而提升性能
 CPU**只能使用基本类型**，char, short, int, long, float, double 等，不能使用数组或结构体等复合类型（汇编中并没有一个指令能直接存取一个struct或数组）。所以：内存对齐的单位是基本类型，目标是让CPU能一次获取到基本类型的值。
@@ -3154,9 +3154,9 @@ O(n^2)
 
    选择和冒泡排序本质上都是把一个最值元素(最大或最小)在每轮检测中，和数组当前给定范围内的最右或最左的元素交换，只不过**选择**是**记录这个最值的下标**，**最后**再进行交换，**冒泡**是直接**不断的和相邻元素交换**，直到最右或最左
 
-   冒泡看上去比选择麻烦，实际结构更加稳定，数值相同的元素的前后不会被改变，但是牺牲了时间复杂度
+   **冒泡**看上去比选择麻烦，实际结构更加稳定，数值相同的元素的前后不会被改变，但是牺牲了时间复杂度
 
-   选择排序：通过比较，选出每一轮中最值元素（最大或最小），然后把它和本轮中的第一个元素进行交换，所以这个算法的关键是要记录每次比较的结果，即每次比较后的最值位置（下标）。
+   **选择**排序：通过比较，选出每一轮中最值元素（最大或最小），然后把它和本轮中的第一个元素进行交换，所以这个算法的关键是要记录每次比较的结果，即每次比较后的最值位置（下标）。
 
 
 整数数组长度----->length = sizeof(ar) / sizeof(ar[0])
@@ -3242,7 +3242,355 @@ void Solution::InsertSort(T ar, int length)
 
 把一个数组分割成两个，先把这两个数组都排序好，再比较这两个数组的第一个元素的下标，小的(小端)放进一个空数组，然后对应的下标后移，直到越界
 
+O(N*logN)
 
+```c++
+//二分递归
+template<typename T>
+void Solution::process(T& ar, int L, int R)
+{
+	if (L == R)
+		return;
+	int mid = L + ((R - L) >> 1);
+	process(ar, L, mid);
+	process(ar, mid + 1, R);
+	merge(ar, L, mid, R);
+
+}
+
+//归并排序 小端
+void inline Solution::merge(int* ar, int L, int mid, int R)
+{
+	int* rar = new int[R - L + 1];//10
+	int p1 = L;//0
+	int p2 = mid + 1;//6
+	int i = 0;
+	while (p1 <= mid && p2 <= R)//5 9
+	{
+		rar[i++] = ar[p1] <= ar[p2] ? ar[p1++] : ar[p2++];
+	}
+	while (p1 <= mid)//5
+		rar[i++] = ar[p1++];
+	while (p2 <= R)//9
+		rar[i++] = ar[p2++];
+	for (i = 0; i < R - L + 1; i++)
+		ar[L + i] = rar[i];
+	delete[]rar;
+}
+
+
+
+
+```
+
+```c++
+
+//递归
+template<typename T>
+int Solution::process(T& ar, int L, int R)
+{
+	if (L == R)
+		return 0;
+	int mid = L + ((R - L) >> 1);
+	return
+		process(ar, L, mid) +
+		process(ar, mid + 1, R) +
+		merge_LittleCount(ar, L, mid, R);
+
+}
+
+
+//归并排序 求小和 每个数组元素左侧比它小的数的和
+inline int Solution::merge_LittleCount(int* ar, int L, int mid, int R)
+{
+	int* rar = new int[R - L + 1]{ 0 };
+	int p1 = L;
+	int p2 = mid + 1;
+	int count = 0;
+	int i = 0;
+	while (p1 <= mid && p2 <= R)
+	{
+		rar[i++] = ar[p1] < ar[p2] ? ar[p1++] : ar[p2++];
+		count += ar[p1] < ar[p2] ? ar[p1] * (R - p2 + 1) : 0;//所以要排序
+	}
+	while (p1 <= mid)//5
+		rar[i++] = ar[p1++];
+	while (p2 <= R)//9
+		rar[i++] = ar[p2++];
+	for (i = 0; i < R - L + 1; i++)
+		ar[i + L] = rar[i];
+
+	return count;
+}
+```
+
+### 3.2.5快速排序
+
+O(N^2)
+
+简单问题:把一个数组中小于指定数的元素放在左边，大于的放右边，空间复杂度为O(1), 时间复杂度为O(N)
+
+设置一个边界初始化为0，遍历数组，小于指定数的元素和边界值下一个的元素交换，然后边界值+1
+
+就是不断的将符合要求的元素吞入指定范围
+
+![image-20220829195437923](C++面试.assets/image-20220829195437923.png)
+
+
+
+上一个问题的升级版，获得小于，等于，大于的三个区间
+
+
+
+![image-20220829204121249](C++面试.assets/image-20220829204121249.png)
+
+```c++
+//荷兰国旗
+inline void Solution::QuickSort(int* ar, int num, int length)
+{
+	int Big = -1;
+	int Low = length;
+	for (int i = 0; i != Low; )
+	{
+		if (ar[i] < num) {
+			Big++;
+			swap(ar, i, Big);
+			i++;
+		}
+		else if (ar[i] > num)
+		{
+			Low--;
+			swap(ar, i, Low);
+		}
+		else
+			i++;
+	}
+}
+```
+
+```c++
+//快速排序3.0版本 O(N*logN) 空间复杂度O(logN)
+
+//由于之前的版本 之前的版本是将最后一个数作为分界数，3.0是随机取一个范围内的数交换到最后去作为交换数，所以好坏的概率都是随机的，原来是取最坏情况所以是O(N^2)
+inline void Solution::QuickSort(int* ar, int L, int R)
+{
+	if (L == R)
+		return;
+	srand(time(0));
+	swap(ar, R, (rand() % (R - L + 1)) + L);
+	pair<int, int> Pair = partition(ar, L, R);
+	//printf("%d %d", Pair.first, Pair.second);
+	QuickSort(ar, L, Pair.first - 1);
+	QuickSort(ar, Pair.second + 1, R);
+
+}
+//荷兰国旗的变式，本质一样，得到小于和大于的边界值
+inline std::pair<int,int> Solution::partition(int* ar, int L, int R)
+{
+
+	int Big = L - 1;//小于边界
+	int Low = R;//大于边界
+	while (L < Low)//所有元素比对完
+	{
+		if (ar[L] < ar[R])
+			swap(ar, ++Big, L++);
+		else if (ar[L] > ar[R])
+			swap(ar, --Low, L);
+		else
+			L++;
+	}
+	swap(ar, Low, R);//把比对数放到与它相等的区域内
+	return pair<int, int>(Big + 1, Low);
+//返回小于边界和大于边界的值	
+}
+
+
+```
+
+### 3.2.6堆排序
+
+大根堆写法，小根堆就是改个大于小于号
+
+利用堆插入(heapinsert)，堆化(heapify)
+
+heapsize初始化为0，就相当于把堆的heapsize从0开始，把数组元素一个个用堆插入放进去，然后进行堆化
+
+```c++
+//大根堆 O(logN)
+inline void Solution::heapInsert(int* ar, int index)
+{
+	while (ar[index] > ar[(index - 1) / 2])//插入节点比他的父节点大就把他推上去，直到它的父节点大于等于它
+	{
+		swap(ar, index, (index - 1) / 2);
+		index = (index - 1) / 2;
+	}
+}
+
+
+
+//堆化  大根堆 O(logN)
+inline void Solution::heapify(int* ar, int index, int heapsize)
+{
+	int left = index * 2 + 1;
+	while (left < heapsize)
+	{
+		int largest = left + 1 < heapsize && ar[left + 1] > ar[left] ? left + 1 : left;//比较两个孩子，保存最大的那个孩子节点下标
+		largest = ar[largest] > ar[index] ? largest : index;//比较最大的孩子节点和父节点
+		if (largest == index)//最大值是它自己则排列完毕
+			break;
+		swap(ar, largest, index);//交换最大值和当前下标的值
+		index = largest;//把当前值的下标指向最大值的下标
+		left = index * 2 + 1;//左节点是改变后的节点的左节点
+	}
+
+}
+
+
+//堆排序  小端  O(N*logN)
+inline void Solution::heapSort(int* ar, int index, int length)
+{
+	for (int i = 0; i < length; i++)
+		heapInsert(ar, i);
+	int heapsize = length;
+	swap(ar, 0, --heapsize);//因为插入的时候就是以大根堆的形式插入的，所以直接执行一次剔除操作
+	while (heapsize > 0)
+	{
+		heapify(ar, 0, heapsize);//把当前堆的范围内的元素转换成大根堆
+		swap(ar, 0, --heapsize);//把最大的元素(根节点)，放在堆底，移动heapsize，剔除出堆
+	}
+}
+
+```
+
+```c++
+//将整个数组都变成大根堆
+for(int i=arr.length;i>=0;i--)
+    heapify(arr,i,arr.length);
+```
+
+<font color='red'>不基于比较的排序</font>
+
+### 3.27计数排序
+
+获得一个数组元素大小的最大值和最小值，以这两个数的差的大小创建一个数组，以这个数组的下标表示数字大小，
+
+再遍历原数组，原数组中的每个元素每出现一次，就在第二个数组的对应下标的元素++（默认都是0），再从左往右遍历第二个数组，把元素映射到原数组里面，得出结果
+
+稳定，但是要求数据是有序类型(有进制)
+
+
+
+```c++
+//计数排序
+inline void Solution::countingSort(int* ar, int max, int min, int length)
+{
+	int size = max - min;//得出最大最小数的范围
+	int* rar = new int[size + 1]{ 0 };//创建一个数组，下标对应目标的元素
+	for (int i = 0; i < size + 1; i++)
+		rar[i] = 0;//每一位都初始化为0，防止访问空成员
+	for (int i = 0; i < length; i++)
+		rar[ar[i] - min]++;//记录每个元素出现的次数
+	for (int j = 0, k = 0; j < size + 1; j++)
+		while (rar[j] > 0) {//把记录数组内的数据对应到目标数组内
+			ar[k++] = min + j;
+			rar[j]--;
+		}
+	delete[] rar;
+}
+
+```
+
+
+
+
+
+### 3.2.8桶排序
+
+不基于比较的排序都要基于数据状况来确定
+
+```C++
+//桶排序
+inline void Solution::BucketSort(int* ar, int L, int R)
+{
+	int max = ar[0];
+	int i = 0, j = 0;
+	for (i = L; i <= R; i++)
+	{
+		max = max < ar[i] ? ar[i] : max;//求最大值
+	}
+	int* rar = new int[max  + 1]{ 0 };
+	for (i = 0; i < max + 1; i++)//很重要
+		rar[i] = 0;
+	for (i = L; i <= R; i++)//记录数的出现个数
+		rar[ar[i]]++;
+	for (i = 0, j = 0; i < max + 1; i++)
+	{
+		while (rar[i])//把桶中的对应数倒入原数组中
+		{
+			ar[j] = i;
+			rar[i]--;
+			j++;
+		}
+	}
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+### 3.2.9基数排序
+
+桶=容器
+
+将所有元素补位到最大元素的位数
+
+例如 最大数100，17就要补成017
+
+然后用所有元素出现的数字进行对应的桶的创建，之后从最低位开始放入桶，再依次从左往右拿出桶，依次进位，直到最高位
+
+实际就是把各个位作为优先级，不同优先级对比，得出结果
+
+```c++
+//基数排序  digit 最大的那个元素有几个十进制位
+inline void Solution::radixSort(int* ar, int L, int R, int length, int digit)
+{
+	const int radix = 10;//十进制就10个桶
+	int i = 0, j = 0;
+	int* bucket = new int[R - L + 1];
+	for (int d = 1; d <= digit; d++)
+	{
+		int* count = new int[radix] {0};//多少个进制多少个桶
+		for (i = 0; i < radix; i++)
+			count[i] = 0;
+		for (i = L; i <= R; i++)
+		{//记录当前位数上的数有多少个
+			j = ((ar[i] / ((int)pow(10, d - 1))) % 10);
+			count[j]++;
+		}
+		for (i = 1; i < radix; i++)//求数组的前缀和
+		{
+			count[i] = count[i] + count[i - 1];
+		}
+		for (i = R; i >= L; i--)
+		{
+			j = ((ar[i] / ((int)pow(10, d - 1))) % 10);
+			bucket[--count[j]] = ar[i];
+			//count[j]--;
+		}
+		for (i = L, j = 0; i <= R; i++, j++)
+			ar[i] = bucket[j];
+	}
+}
+```
 
 
 
@@ -3374,7 +3722,7 @@ int Solution::Dichotomy(T ar, int length)
 
 相当于把运算放进系统栈，有不确定的结果，就把它压入栈，算出结果了，就把结果弹出栈 ,每一个节点展开就是一个多叉树,
 
-master公式
+master公式（只能用于递归）
 
 子问题的规模要一样
 
@@ -3399,7 +3747,6 @@ int process(int []ar , int L,int R)
     int right =process(ar,mid+1,R);
     
     return lef>right?lef:right;
-    
 }
 //master公式 T(N)=2*(T/2) + O(1 )
 ```
@@ -3408,11 +3755,97 @@ int process(int []ar , int L,int R)
 
 
 
+## 3.7堆
+
+<font size=5>堆的结构(很重要)</font>
+
+完全二叉树-----可以从左往右遍历完的树，大致是有左子树才有右子树S
+
+优先级队列结构就是堆结构
+
+```tex
+连续的一个数组   
+
+i节点的左孩子的节点的下标=2*i+1 右孩子2*i+2
+父节点 (i-1)/2
+
+比对数组的长度判断下标的可行性
+```
+
+大根堆：以任意一个节点作为根节点的子树的最大值是其根节点
+
+堆的插入(heapinsert) 往堆内加入数时，通过不断的和父节点比较和交换，直到根节点或不再大于父节点
+
+```c++
+while(arr[index]>arr[(index-1)/2])
+{
+    swap(arr, index, (index - 1) /2);
+    index = (index - 1)/2;
+}
+```
+
+### 3.7.1堆化(heapify)
+
+```c++
+void heapify(int[]ar,int index,int heapsize)//这是一个不断向下的堆化
+{
+    int left = index * 2 + 1;
+    while ( left < heapsize )
+    {
+ int largest = left +1< heapsize && ar[left+1] > ar[left] ? left + 1 : left;//比较两个孩子，保存最大的那个孩子节点下标
+ largest = ar[largest]>ar[index]?largest : index;//比较最大的孩子节点和父节点
+        if(largest == index)//最大值是它自己则排列完毕
+            break;
+    swap(ar, largest, index);//交换最大值和当前下标的值
+    index = largest;//把当前值的下标指向最大值的下标
+    left = index * 2 + 1;//左节点是改变后的节点的左节点
+         }
+}
+```
+
+### 3.7.2堆的使用
+
+可以自己实现一个heapify函数，也可以直接使用algorithm头文件里面的make_heap(iterator,iterator,func)函数
+
+这个函数默认接受两个迭代器指定堆化范围，也可以接受一个排序函数(实现很麻烦),默认是大根堆
+
+less<>是大根堆 ，大的交换
+
+greater<>是小根堆，小的交换
+
+虽然直接使用相关提供的算法会很方便，但是这些算法是写死的，对于比如改变堆内的某个数，使用如make_heap这些函数会导致对堆重新扫描一遍，很麻烦，但是自己手写的堆，自己可以控制进行更加简单的操作，对于某些需求必须进行手写堆
+
+
+
+```c++
+vector<int> vc{  4,6,2,7,5,8,2,0,8 };
+make_heap(vc.begin(), vc.end());
+//8 8 4 7 5 2 2 0 6
+vc.push_back(9);push_heap(vc.begin(), vc.end());
+//9 8 4 7 8 2 2 0 6 5  甚至插入数据后直接用push_heap可以直接把插入数据放到堆内
+pop_heap(iterator,iterator);
+//pop_heap会把堆顶元素放到堆底，并对剩下元素进行堆化
+pop_back()//然后把堆底元素删除
+
+is_heap(iterator,iterator,func)//判断一个序列是否是堆  
+func默认使用是less<>，大根堆要换成greater<>
+ 
+is_heap_until(iter,iter,func)
+//判断这个代码段是否是堆，并指向第一个不在堆内的元素    
+  
+sort_heap(iter,iter)
+    //将一个堆进行排序，默认是做成小根堆 ,小根堆必须用greater,大根堆必须用less，不然会报错
+ 
+    
+```
 
 
 
 
 
+## 3.8比较器
+
+重载运算符
 
 
 
@@ -3465,6 +3898,12 @@ public:
  }
 };
 ```
+
+## 求第K个大的元素
+
+
+
+
 
 
 
